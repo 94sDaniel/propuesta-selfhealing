@@ -12,9 +12,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
-        <serenity.version>4.1.17</serenity.version>
-        <serenity.cucumber.version>4.1.17</serenity.cucumber.version>
-        <cucumber.version>6.11.0</cucumber.version>
+        <serenity.version>4.3.2</serenity.version>
     </properties>
 
     <dependencies>
@@ -35,23 +33,8 @@
         </dependency>
         <dependency>
             <groupId>net.serenity-bdd</groupId>
-            <artifactId>serenity-cucumber6</artifactId>
-            <version>${serenity.cucumber.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.cucumber</groupId>
-            <artifactId>cucumber-java</artifactId>
-            <version>${cucumber.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.cucumber</groupId>
-            <artifactId>cucumber-junit</artifactId>
-            <version>${cucumber.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.seleniumhq.selenium</groupId>
-            <artifactId>selenium-java</artifactId>
-            <version>3.141.59</version>
+            <artifactId>serenity-cucumber</artifactId>
+            <version>${serenity.version}</version>
         </dependency>
         <dependency>
             <groupId>org.assertj</groupId>
