@@ -13,7 +13,7 @@
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
         <serenity.version>4.1.17</serenity.version>
-        <serenity.cucumber.version>2.7.3</serenity.cucumber.version>
+        <serenity.cucumber.version>4.1.17</serenity.cucumber.version>
         <cucumber.version>6.11.0</cucumber.version>
     </properties>
 
