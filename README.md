@@ -3,7 +3,7 @@
 Ejemplo mínimo para mostrar cómo un "Plan B" permite que las pruebas web sigan funcionando cuando cambia un locator. El proyecto usa **Java 11**, **Maven**, **Serenity BDD** y **Cucumber**. Incluye una página HTML local que simula el caso: el locator principal falla a propósito y `SmartFinder` activa un locator de respaldo.
 
 ## Estructura
-- `pom.xml`: dependencias de Serenity, Cucumber y Selenium (incluye `selenium-devtools-v85`, el artefacto disponible en Maven Central que expone `HasDevTools` usado por Serenity 4.x).
+- `pom.xml`: dependencias de Serenity y Selenium (incluye `selenium-java` y `selenium-devtools-v120`, artefacto que expone `HasDevTools` usado por Serenity 4.x).
 - `src/test/resources/site/index.html`: página local con un botón y un mensaje de resultado.
 - `src/test/java/com/example/utils/SmartFinder.java`: helper autocurativo.
 - `src/test/java/com/example/stepdefinitions/SelfHealingStepDefinitions.java`: pasos de Cucumber que usan `SmartFinder` y el plan B.
