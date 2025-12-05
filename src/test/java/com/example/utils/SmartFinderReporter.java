@@ -7,9 +7,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.nio.file.Path; // Se mantiene el import para Path
-import org.openqa.selenium.TakesScreenshot; // <<<< NECESARIO AÑADIR
-import org.openqa.selenium.OutputType; // <<<< NECESARIO AÑADIR
 
 /**
  * Encapsula la forma en que SmartFinder reporta cómo se encontró el elemento.
@@ -34,17 +31,29 @@ public class SmartFinderReporter {
                 .andContents("No se encontró el elemento con el locator: " + locator);
     }
 
+    public void reportHealeniumUpdate(By originalLocator, String healedLocator) {
+        if (healedLocator != null) {
+            LOGGER.info("Healenium actualizó el locator de {} a {}", originalLocator, healedLocator);
+            Serenity.recordReportData()
+                    .withTitle("Healenium - locator curado")
+                    .andContents("Locator original: " + originalLocator + "\nLocator nuevo: " + healedLocator);
+        } else {
+            LOGGER.info("Healenium no necesitó curar el locator {}", originalLocator);
+            Serenity.recordReportData()
+                    .withTitle("Healenium - sin curación")
+                    .andContents("El locator original funcionó: " + originalLocator);
+        }
+        attachScreenshot("Healenium - evidencia");
+    }
+
     private void attachScreenshot(String title) {
         try {
-            // FIX: Accedemos al WebDriver gestionado por Serenity y usamos la API estándar de Selenium para obtener el archivo.
-            File screenshotFile = ((TakesScreenshot) Serenity.getWebdriverManager().getWebdriver()).getScreenshotAs(OutputType.FILE);
-
-            if (screenshotFile != null && screenshotFile.exists()) {
+            File screenshot = Serenity.takeScreenshot();
+            if (screenshot != null && screenshot.exists()) {
                 Serenity.recordReportData()
                         .withTitle(title)
                         .downloadable()
-                        // FIX: Convertimos File a Path, que es lo que Serenity 4.x espera en fromFile()
-                        .fromFile(screenshotFile.toPath());
+                        .fromFile(screenshot);
             }
         } catch (Exception e) {
             LOGGER.debug("No se pudo adjuntar captura para {}", title, e);

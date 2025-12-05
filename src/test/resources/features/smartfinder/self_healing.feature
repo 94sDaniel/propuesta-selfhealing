@@ -8,3 +8,8 @@ Característica: Autocuración de locators con SmartFinder
     Dado el usuario abre la pagina de ejemplo de autocuracion
     Cuando el usuario busca el boton con SmartFinder
     Entonces la accion continua sin fallar gracias al Plan B
+
+  Escenario: Healenium cura el locator sin plan de respaldo
+    Dado el usuario abre la pagina de ejemplo de autocuracion
+    Cuando el usuario busca el boton con Healenium
+    Entonces la accion continua gracias a Healenium sin configurar un Plan B

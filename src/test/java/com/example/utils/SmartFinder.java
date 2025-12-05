@@ -7,14 +7,24 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+/**
+ * Localizador autocurativo muy sencillo: intenta el locator principal y,
+ * si falla, recurre al locator de respaldo. Serenidad registra los pasos
+ * para que quede evidencia del "Plan B".
+ */
 public class SmartFinder {
+
     private static final Logger LOGGER = LoggerFactory.getLogger(SmartFinder.class);
+
     private final WebDriver driver;
     private final SmartFinderReporter reporter;
+
     public SmartFinder(WebDriver driver) {
         this.driver = driver;
         this.reporter = new SmartFinderReporter();
     }
+
     public WebElement find(By primaryLocator, By fallbackLocator) {
         try {
             WebElement element = driver.findElement(primaryLocator);
