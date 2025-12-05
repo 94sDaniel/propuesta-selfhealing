@@ -12,6 +12,8 @@ import org.assertj.core.api.Assertions;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.remote.RemoteWebDriver;
+import net.thucydides.core.webdriver.WebDriverFacade;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -28,7 +30,7 @@ public class SelfHealingStepDefinitions {
     @Before
     public void setUp() {
         smartFinder = new SmartFinder(driver);
-        healeniumDriver = SelfHealingDriver.create(driver);
+        healeniumDriver = SelfHealingDriver.create(unwrapToRemote(driver));
     }
 
     @Given("^el usuario abre la pagina de ejemplo de autocuracion$")
@@ -87,5 +89,24 @@ public class SelfHealingStepDefinitions {
             // Si Healenium cambia su API, seguimos adelante sin bloquear la prueba.
         }
         reporter.reportHealeniumUpdate(originalLocator, healedLocator);
+    }
+
+    private RemoteWebDriver unwrapToRemote(WebDriver webdriver) {
+        WebDriver current = webdriver;
+
+        while (current instanceof WebDriverFacade) {
+            WebDriver proxied = ((WebDriverFacade) current).getProxiedDriver();
+            // DevToolsWebDriverFacade también es un WebDriverFacade, así que seguimos desenrollando
+            if (proxied == current) {
+                break;
+            }
+            current = proxied;
+        }
+
+        if (current instanceof RemoteWebDriver) {
+            return (RemoteWebDriver) current;
+        }
+
+        throw new IllegalStateException("El WebDriver administrado no es compatible con RemoteWebDriver necesario para Healenium");
     }
 }
