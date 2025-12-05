@@ -76,7 +76,7 @@ public class SmartFinderReporter {
             Serenity.recordReportData()
                     .withTitle(title)
                     .downloadable()
-                    .fromFile(targetScreenshot.toFile());
+                    .fromFile(targetScreenshot);
         } catch (Exception e) {
             LOGGER.debug("No se pudo adjuntar captura para {}", title, e);
         }
