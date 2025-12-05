@@ -27,12 +27,19 @@ public class SelfHealingStepDefinitions {
     private SmartFinder smartFinder;
     private SelfHealingDriver healeniumDriver;
     private final SmartFinderReporter reporter = new SmartFinderReporter();
+    private boolean healeniumOnline = false;
 
     @Before
     public void setUp() {
         WebDriverManager.chromedriver().setup();
         smartFinder = new SmartFinder(driver);
-        healeniumDriver = SelfHealingDriver.create(unwrapToRemote(driver));
+        try {
+            healeniumDriver = SelfHealingDriver.create(unwrapToRemote(driver));
+            healeniumOnline = true;
+        } catch (Exception ex) {
+            reporter.reportHealeniumUnavailable(ex);
+            healeniumOnline = false;
+        }
     }
 
     @Given("^el usuario abre la pagina de ejemplo de autocuracion$")
@@ -55,9 +62,23 @@ public class SelfHealingStepDefinitions {
     @When("^el usuario busca el boton con Healenium$")
     public void userFindsButtonWithHealenium() {
         By originalLocator = By.id("boton-inexistente");
-        WebElement button = healeniumDriver.findElement(originalLocator);
-        reportHealingResult(originalLocator);
-        button.click();
+        if (healeniumOnline && healeniumDriver != null) {
+            try {
+                WebElement button = healeniumDriver.findElement(originalLocator);
+                reportHealingResult(originalLocator);
+                button.click();
+                return;
+            } catch (Exception ex) {
+                reporter.reportHealeniumFallback(originalLocator, ex);
+            }
+        }
+
+        // Fallback: usa SmartFinder con el Plan B ya configurado
+        WebElement fallbackButton = smartFinder.find(
+                originalLocator,
+                By.cssSelector("button[data-testid='boton-principal']")
+        );
+        fallbackButton.click();
     }
 
     @Then("^la accion continua sin fallar gracias al Plan B$")

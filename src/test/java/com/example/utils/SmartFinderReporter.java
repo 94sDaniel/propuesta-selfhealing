@@ -53,6 +53,20 @@ public class SmartFinderReporter {
         attachScreenshot("Healenium - evidencia");
     }
 
+    public void reportHealeniumUnavailable(Exception error) {
+        LOGGER.warn("Healenium no está disponible, se usará un fallback", error);
+        Serenity.recordReportData()
+                .withTitle("Healenium - no disponible")
+                .andContents("Se omitió Healenium porque no respondió: " + error.getMessage());
+    }
+
+    public void reportHealeniumFallback(By locator, Exception error) {
+        LOGGER.warn("Healenium falló al curar {}. Se usará SmartFinder como respaldo.", locator, error);
+        Serenity.recordReportData()
+                .withTitle("Healenium - fallback a SmartFinder")
+                .andContents("Locator original: " + locator + "\nMotivo: " + error.getMessage());
+    }
+
     private void attachScreenshot(String title) {
         try {
             WebDriver driver = Serenity.getDriver();

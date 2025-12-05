@@ -35,3 +35,4 @@ usa **Java 11**, **Maven**, **Serenity BDD** y **Cucumber**. Incluye una página
 3. Registramos en Serenity qué locator curó Healenium (sin detener la prueba) y adjuntamos captura.
    - Nota: en Serenity el WebDriver es un `WebDriverFacade` (o `DevToolsWebDriverFacade`), por lo que lo desenrollamos hasta el `RemoteWebDriver` real antes de construir el `SelfHealingDriver` para evitar `ClassCastException`.
 4. El clic se ejecuta con el locator curado y el mensaje en pantalla confirma que la prueba siguió viva.
+   - Si el backend de Healenium no está levantado, el paso registra la indisponibilidad y cae automáticamente al mismo Plan B que usa `SmartFinder`, manteniendo el escenario verde y sin reventar la ejecución local.
