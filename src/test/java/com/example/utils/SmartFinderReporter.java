@@ -2,11 +2,18 @@ package com.example.utils;
 
 import net.serenitybdd.core.Serenity;
 import org.openqa.selenium.By;
+import org.openqa.selenium.OutputType;
+import org.openqa.selenium.TakesScreenshot;
+import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 
 /**
  * Encapsula la forma en que SmartFinder reporta cómo se encontró el elemento.
@@ -48,13 +55,28 @@ public class SmartFinderReporter {
 
     private void attachScreenshot(String title) {
         try {
-            File screenshot = Serenity.takeScreenshot();
-            if (screenshot != null && screenshot.exists()) {
-                Serenity.recordReportData()
-                        .withTitle(title)
-                        .downloadable()
-                        .fromFile(screenshot);
+            WebDriver driver = Serenity.getDriver();
+            if (!(driver instanceof TakesScreenshot)) {
+                LOGGER.debug("El driver no soporta capturas, se omite screenshot para {}", title);
+                return;
             }
+
+            File rawScreenshot = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
+            if (rawScreenshot == null || !rawScreenshot.exists()) {
+                LOGGER.debug("No se obtuvo archivo de captura para {}", title);
+                return;
+            }
+
+            Path evidenceDir = Paths.get("target", "serenity-evidence");
+            Files.createDirectories(evidenceDir);
+            String safeTitle = title.replaceAll("[^a-zA-Z0-9-_ ]", "_").replaceAll("\\s+", "_");
+            Path targetScreenshot = evidenceDir.resolve(safeTitle + ".png");
+            Files.copy(rawScreenshot.toPath(), targetScreenshot, StandardCopyOption.REPLACE_EXISTING);
+
+            Serenity.recordReportData()
+                    .withTitle(title)
+                    .downloadable()
+                    .fromFile(targetScreenshot.toFile());
         } catch (Exception e) {
             LOGGER.debug("No se pudo adjuntar captura para {}", title, e);
         }
