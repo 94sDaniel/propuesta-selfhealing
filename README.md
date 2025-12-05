@@ -32,4 +32,5 @@ usa **Java 11**, **Maven**, **Serenity BDD** y **Cucumber**. Incluye una página
 1. Usamos `SelfHealingDriver` de Healenium, que envía los locators al backend (`healenium.properties`).
 2. Al no encontrar el `id="boton-inexistente"`, Healenium busca alternativas similares y devuelve un nuevo locator curado.
 3. Registramos en Serenity qué locator curó Healenium (sin detener la prueba) y adjuntamos captura.
+   - Nota: en Serenity el WebDriver es un `WebDriverFacade` (o `DevToolsWebDriverFacade`), por lo que lo desenrollamos hasta el `RemoteWebDriver` real antes de construir el `SelfHealingDriver` para evitar `ClassCastException`.
 4. El clic se ejecuta con el locator curado y el mensaje en pantalla confirma que la prueba siguió viva.

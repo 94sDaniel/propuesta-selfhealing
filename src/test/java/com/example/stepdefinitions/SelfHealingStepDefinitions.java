@@ -92,15 +92,21 @@ public class SelfHealingStepDefinitions {
     }
 
     private RemoteWebDriver unwrapToRemote(WebDriver webdriver) {
-        if (webdriver instanceof WebDriverFacade) {
-            WebDriver proxied = ((WebDriverFacade) webdriver).getProxiedDriver();
-            if (proxied instanceof RemoteWebDriver) {
-                return (RemoteWebDriver) proxied;
+        WebDriver current = webdriver;
+
+        while (current instanceof WebDriverFacade) {
+            WebDriver proxied = ((WebDriverFacade) current).getProxiedDriver();
+            // DevToolsWebDriverFacade también es un WebDriverFacade, así que seguimos desenrollando
+            if (proxied == current) {
+                break;
             }
+            current = proxied;
         }
-        if (webdriver instanceof RemoteWebDriver) {
-            return (RemoteWebDriver) webdriver;
+
+        if (current instanceof RemoteWebDriver) {
+            return (RemoteWebDriver) current;
         }
+
         throw new IllegalStateException("El WebDriver administrado no es compatible con RemoteWebDriver necesario para Healenium");
     }
 }
