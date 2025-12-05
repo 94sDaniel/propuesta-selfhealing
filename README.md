@@ -4,7 +4,7 @@ Ejemplo mínimo para mostrar cómo un "Plan B" permite que las pruebas web sigan
 usa **Java 11**, **Maven**, **Serenity BDD** y **Cucumber**. Incluye una página HTML local que simula el caso: el locator principal falla a propósito y `SmartFinder` activa un locator de respaldo.
 
 ## Estructura
-- `pom.xml`: dependencias de Serenity y Selenium (incluye `selenium-java` y `selenium-devtools-v120`, artefacto que expone `HasDevTools` usado por Serenity 4.x) y ahora `healenium-web` para un enfoque sin Plan B manual.
+- `pom.xml`: dependencias de Serenity y Selenium (incluye `selenium-java` y `selenium-devtools-v143`, artefacto que expone `HasDevTools` usado por Serenity 4.x) y ahora `healenium-web` para un enfoque sin Plan B manual.
 - `src/test/resources/serenity.conf`: configura capturas `BEFORE_AND_AFTER_EACH_STEP` para que el reporte tenga evidencia visual.
 - `src/test/resources/site/index.html`: página local con un botón y un mensaje de resultado.
 - `src/test/java/com/example/utils/SmartFinder.java`: helper autocurativo que intenta locator principal y, si falla, activa el Plan B.

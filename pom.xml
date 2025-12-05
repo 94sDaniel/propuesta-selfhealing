@@ -13,9 +13,9 @@
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
         <serenity.version>4.3.2</serenity.version>
-        <selenium.version>4.20.0</selenium.version>
+        <selenium.version>4.38.0</selenium.version>
         <healenium.version>3.3.5</healenium.version>
-        <webdrivermanager.version>5.9.2</webdrivermanager.version>
+        <webdrivermanager.version>6.3.2</webdrivermanager.version>
     </properties>
 
     <dependencies>
@@ -58,7 +58,7 @@
         </dependency>
         <dependency>
             <groupId>org.seleniumhq.selenium</groupId>
-            <artifactId>selenium-devtools-v120</artifactId>
+            <artifactId>selenium-devtools-v143</artifactId>
             <version>${selenium.version}</version>
             <scope>test</scope>
         </dependency>
