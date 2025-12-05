@@ -4,6 +4,7 @@ import com.example.utils.SmartFinder;
 import com.example.utils.SmartFinderReporter;
 import com.epam.healenium.SelfHealingDriver;
 import io.cucumber.java.Before;
+import io.github.bonigarcia.wdm.WebDriverManager;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -29,6 +30,7 @@ public class SelfHealingStepDefinitions {
 
     @Before
     public void setUp() {
+        WebDriverManager.chromedriver().setup();
         smartFinder = new SmartFinder(driver);
         healeniumDriver = SelfHealingDriver.create(unwrapToRemote(driver));
     }

@@ -16,7 +16,8 @@ usa **Java 11**, **Maven**, **Serenity BDD** y **Cucumber**. Incluye una página
 
 ## Cómo ejecutar
 1. Instala Java 11 y Maven 3.8+.
-2. Ejecuta las pruebas con Serenity (requiere un navegador disponible, por defecto Chrome):
+2. Ejecuta las pruebas con Serenity (requiere un navegador disponible, por defecto Chrome). El proyecto usa
+   `WebDriverManager` para descargar automáticamente el binario de ChromeDriver si no está presente:
    ```bash
    mvn test
    ```
