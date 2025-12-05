@@ -7,6 +7,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.nio.file.Path; // Se mantiene el import para Path
+import org.openqa.selenium.TakesScreenshot; // <<<< NECESARIO AÑADIR
+import org.openqa.selenium.OutputType; // <<<< NECESARIO AÑADIR
 
 /**
  * Encapsula la forma en que SmartFinder reporta cómo se encontró el elemento.
@@ -33,12 +36,15 @@ public class SmartFinderReporter {
 
     private void attachScreenshot(String title) {
         try {
-            File screenshot = Serenity.takeScreenshot();
-            if (screenshot != null && screenshot.exists()) {
+            // FIX: Accedemos al WebDriver gestionado por Serenity y usamos la API estándar de Selenium para obtener el archivo.
+            File screenshotFile = ((TakesScreenshot) Serenity.getWebdriverManager().getWebdriver()).getScreenshotAs(OutputType.FILE);
+
+            if (screenshotFile != null && screenshotFile.exists()) {
                 Serenity.recordReportData()
                         .withTitle(title)
                         .downloadable()
-                        .fromFile(screenshot);
+                        // FIX: Convertimos File a Path, que es lo que Serenity 4.x espera en fromFile()
+                        .fromFile(screenshotFile.toPath());
             }
         } catch (Exception e) {
             LOGGER.debug("No se pudo adjuntar captura para {}", title, e);

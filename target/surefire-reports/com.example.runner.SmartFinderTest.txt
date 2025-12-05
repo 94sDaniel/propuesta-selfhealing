@@ -1,4 +1,4 @@
 -------------------------------------------------------------------------------
 Test set: com.example.runner.SmartFinderTest
 -------------------------------------------------------------------------------
-Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 12.24 s -- in com.example.runner.SmartFinderTest
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 8.210 s -- in com.example.runner.SmartFinderTest
