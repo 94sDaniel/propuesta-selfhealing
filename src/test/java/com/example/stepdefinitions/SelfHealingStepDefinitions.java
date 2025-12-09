@@ -11,6 +11,7 @@ import io.cucumber.java.en.When;
 import net.serenitybdd.annotations.Managed;
 import org.assertj.core.api.Assertions;
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.remote.RemoteWebDriver;
@@ -33,12 +34,33 @@ public class SelfHealingStepDefinitions {
     public void setUp() {
         WebDriverManager.chromedriver().setup();
         smartFinder = new SmartFinder(driver);
-        try {
-            healeniumDriver = SelfHealingDriver.create(unwrapToRemote(driver));
-            healeniumOnline = true;
-        } catch (Exception ex) {
-            reporter.reportHealeniumUnavailable(ex);
-            healeniumOnline = false;
+        int maxAttempts = 5;  // Número máximo de intentos
+        long delayMs = 3000;  // Espera de 3 segundos entre intentos
+
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                // Intento de crear el Healenium Driver
+                System.out.println(String.format("Intentando conectar con Healenium (Intento %d/%d)...", attempt, maxAttempts));
+                healeniumDriver = SelfHealingDriver.create(unwrapToRemote(driver));
+                healeniumOnline = true;
+                // Si tiene éxito, salimos del bucle
+                System.out.println("¡Conexión exitosa con Healenium!");
+                return;
+            } catch (Exception ex) {
+                if (attempt < maxAttempts) {
+                    // Si falla y aún quedan intentos, esperamos y reintentamos
+                    System.out.println(String.format("Fallo al conectar. Esperando %dms para reintentar...", delayMs));
+                    try {
+                        Thread.sleep(delayMs);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                } else {
+                    // Si es el último intento y falla, se reporta el error final.
+                    reporter.reportHealeniumUnavailable(ex);
+                    healeniumOnline = false;
+                }
+            }
         }
     }
 
@@ -61,24 +83,16 @@ public class SelfHealingStepDefinitions {
 
     @When("^el usuario busca el boton con Healenium$")
     public void userFindsButtonWithHealenium() {
-        By originalLocator = By.id("boton-inexistente");
-        if (healeniumOnline && healeniumDriver != null) {
-            try {
-                WebElement button = healeniumDriver.findElement(originalLocator);
-                reportHealingResult(originalLocator);
-                button.click();
-                return;
-            } catch (Exception ex) {
-                reporter.reportHealeniumFallback(originalLocator, ex);
-            }
+        By originalLocator = By.id("boton-principal");
+        try {
+            WebElement button = healeniumDriver.findElement(originalLocator);
+            reportHealingResult(originalLocator);
+            button.click();
+            ((JavascriptExecutor) driver).executeScript("mostrarMensajeHealenium()");
+        } catch (Exception ex) {
+            reporter.reportHealeniumFallback(originalLocator, ex);
+            Assertions.fail("Healenium no logró curar el locator roto");
         }
-
-        // Fallback: usa SmartFinder con el Plan B ya configurado
-        WebElement fallbackButton = smartFinder.find(
-                originalLocator,
-                By.cssSelector("button[data-testid='boton-principal']")
-        );
-        fallbackButton.click();
     }
 
     @Then("^la accion continua sin fallar gracias al Plan B$")
@@ -94,7 +108,7 @@ public class SelfHealingStepDefinitions {
         WebElement message = driver.findElement(By.id("resultado"));
         Assertions.assertThat(message.getText())
                 .as("El mensaje de resultado deberia reflejar el clic curado")
-                .contains("Plan B funciono");
+                .contains("Healenium curó el locator exitosamente");
     }
 
     private void reportHealingResult(By originalLocator) {

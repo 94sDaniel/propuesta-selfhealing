@@ -9,6 +9,7 @@ import org.junit.runner.RunWith;
         features = "src/test/resources/features/smartfinder",
         glue = "com.example.stepdefinitions",
         plugin = {"pretty"},
+        tags = "@healing",
         snippets = CucumberOptions.SnippetType.CAMELCASE
 )
 public class SmartFinderTest {
