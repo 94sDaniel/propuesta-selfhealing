@@ -9,6 +9,7 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import net.serenitybdd.annotations.Managed;
+import net.serenitybdd.core.Serenity;
 import org.assertj.core.api.Assertions;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
@@ -73,9 +74,7 @@ public class SelfHealingStepDefinitions {
     @When("^el usuario busca el boton con SmartFinder$")
     public void userFindsButtonWithSmartFinder() {
         WebElement button = smartFinder.find(
-                // Locator inicial fallido para simular la cura
                 By.id("boton-inexistente"),
-                // Plan B: atributo estable preparado
                 By.cssSelector("button[data-testid='boton-principal']")
         );
         button.click();
@@ -86,8 +85,8 @@ public class SelfHealingStepDefinitions {
         By originalLocator = By.id("boton-principal");
         try {
             WebElement button = healeniumDriver.findElement(originalLocator);
-            reportHealingResult(originalLocator);
             button.click();
+            reportHealingResult(originalLocator);
             ((JavascriptExecutor) driver).executeScript("mostrarMensajeHealenium()");
         } catch (Exception ex) {
             reporter.reportHealeniumFallback(originalLocator, ex);
@@ -110,22 +109,37 @@ public class SelfHealingStepDefinitions {
                 .as("El mensaje de resultado deberia reflejar el clic curado")
                 .contains("Healenium curó el locator exitosamente");
     }
-
     private void reportHealingResult(By originalLocator) {
         String healedLocator = null;
+        boolean isHealed = false;
+        Double score = null;
+
         try {
             Object healingResult = healeniumDriver.getClass().getMethod("getLastHealingResult").invoke(healeniumDriver);
             if (healingResult != null) {
+
+                Object scoreObj = healingResult.getClass().getMethod("getScore").invoke(healingResult);
+                if (scoreObj instanceof Number) {
+                    score = ((Number) scoreObj).doubleValue();
+                }
+
                 Object target = healingResult.getClass().getMethod("getTarget").invoke(healingResult);
                 if (target != null) {
-                    Object locatorValue = target.getClass().getMethod("getLocator").invoke(target);
-                    healedLocator = locatorValue != null ? locatorValue.toString() : null;
+                    Object locatorObj = target.getClass().getMethod("getLocator").invoke(target);
+                    if (locatorObj != null) {
+                        healedLocator = locatorObj.toString();
+                        isHealed = !healedLocator.equals(originalLocator.toString());
+                    }
                 }
             }
-        } catch (Exception ignored) {
-            // Si Healenium cambia su API, seguimos adelante sin bloquear la prueba.
+        } catch (Exception ignored) {}
+
+        if (isHealed) {
+            reporter.reportHealeniumUpdate(originalLocator,
+                    healedLocator + " | Score: " + score);
+        } else {
+            reporter.reportHealeniumUpdate(originalLocator, null);
         }
-        reporter.reportHealeniumUpdate(originalLocator, healedLocator);
     }
 
     private RemoteWebDriver unwrapToRemote(WebDriver webdriver) {

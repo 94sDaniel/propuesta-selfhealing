@@ -15,10 +15,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 
-/**
- * Encapsula la forma en que SmartFinder reporta cómo se encontró el elemento.
- * Registra en logs y adjunta evidencia al reporte de Serenity (incluyendo capturas).
- */
 public class SmartFinderReporter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SmartFinderReporter.class);
@@ -39,17 +35,28 @@ public class SmartFinderReporter {
     }
 
     public void reportHealeniumUpdate(By originalLocator, String healedLocator) {
-        if (healedLocator != null) {
-            LOGGER.info("Healenium actualizó el locator de {} a {}", originalLocator, healedLocator);
+
+        boolean healed = healedLocator != null
+                && !healedLocator.contains(originalLocator.toString())
+                && (healedLocator.contains("By.") || healedLocator.contains("cssSelector"));
+
+        if (healed) {
+            LOGGER.info("Healenium CURÓ el locator de {} a {}", originalLocator, healedLocator);
             Serenity.recordReportData()
-                    .withTitle("Healenium - locator curado")
-                    .andContents("Locator original: " + originalLocator + "\nLocator nuevo: " + healedLocator);
+                    .withTitle("Healenium - locator curado 🟢")
+                    .andContents(
+                            "Locator original: " + originalLocator +
+                                    "\nLocator curado: " + healedLocator
+                    );
         } else {
-            LOGGER.info("Healenium no necesitó curar el locator {}", originalLocator);
+            LOGGER.info("Healenium NO curó el locator {}", originalLocator);
             Serenity.recordReportData()
-                    .withTitle("Healenium - sin curación")
-                    .andContents("El locator original funcionó: " + originalLocator);
+                    .withTitle("Healenium - sin curación ⚪")
+                    .andContents(
+                            "El locator original funcionó o no hubo cambio: " + originalLocator
+                    );
         }
+
         attachScreenshot("Healenium - evidencia");
     }
 
