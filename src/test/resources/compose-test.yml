@@ -1,0 +1,60 @@
+services:
+
+  postgres-db:
+    image: postgres:15.5-alpine
+    platform: linux/amd64
+    container_name: postgres-db
+    ports:
+      - "5432:5432"
+    restart: always
+    environment:
+      POSTGRES_DB: healenium
+      POSTGRES_USER: healenium_user
+      POSTGRES_PASSWORD: YDk2nmNs4s9aCP6K
+    networks:
+      - healenium
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U healenium_user -d healenium"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+
+  healenium:
+    image: healenium/hlm-backend:3.4.3
+    platform: linux/amd64
+    container_name: healenium
+    restart: on-failure
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+    ports:
+      - "7878:7878"
+    environment:
+      SPRING_POSTGRES_DB: healenium
+      SPRING_POSTGRES_SCHEMA_NAME: healenium
+      SPRING_JPA_PROPERTIES_HIBERNATE_DEFAULT_SCHEMA: healenium
+      SPRING_DATASOURCE_HIKARI_SCHEMA: healenium
+      SPRING_POSTGRES_USER: healenium_user
+      SPRING_POSTGRES_PASSWORD: YDk2nmNs4s9aCP6K
+      SPRING_POSTGRES_DB_HOST: postgres-db
+      KEY_SELECTOR_URL: http://selector-imitator:8000/imitate
+      FIND_ELEMENTS_AUTO_HEALING: true
+      COLLECT_METRICS: true
+      HLM_LOG_LEVEL: info
+    networks:
+      - healenium
+
+  selector-imitator:
+    image: healenium/hlm-selector-imitator:1.3
+    platform: linux/amd64
+    container_name: selector-imitator
+    restart: on-failure
+    ports:
+      - "8000:8000"
+    depends_on:
+      - healenium
+    networks:
+      - healenium
+
+networks:
+  healenium:
