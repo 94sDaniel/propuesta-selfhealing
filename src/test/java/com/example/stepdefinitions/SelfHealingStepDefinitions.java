@@ -111,12 +111,14 @@ public class SelfHealingStepDefinitions {
     }
     private void reportHealingResult(By originalLocator) {
         String healedLocator = null;
+        boolean healingTriggered = false;
         boolean isHealed = false;
         Double score = null;
 
         try {
             Object healingResult = healeniumDriver.getClass().getMethod("getLastHealingResult").invoke(healeniumDriver);
             if (healingResult != null) {
+                healingTriggered = true;
 
                 Object scoreObj = healingResult.getClass().getMethod("getScore").invoke(healingResult);
                 if (scoreObj instanceof Number) {
@@ -132,13 +134,34 @@ public class SelfHealingStepDefinitions {
                     }
                 }
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ex) {
+            reporter.reportHealeniumUpdate(originalLocator, null,
+                    SmartFinderReporter.HealingOutcome.UNKNOWN, score,
+                    "No se pudo obtener el resultado de Healenium: " + ex.getMessage());
+            return;
+        }
 
-        if (isHealed) {
-            reporter.reportHealeniumUpdate(originalLocator,
-                    healedLocator + " | Score: " + score);
+        if (healingTriggered && isHealed) {
+            reporter.reportHealeniumUpdate(
+                    originalLocator,
+                    healedLocator + (score != null ? " | Score: " + score : ""),
+                    SmartFinderReporter.HealingOutcome.HEALED,
+                    score,
+                    "Healenium reemplazó el locator original");
+        } else if (healingTriggered) {
+            reporter.reportHealeniumUpdate(
+                    originalLocator,
+                    healedLocator + (score != null ? " | Score: " + score : ""),
+                    SmartFinderReporter.HealingOutcome.ORIGINAL_REUSED,
+                    score,
+                    "Healenium buscó alternativas pero decidió mantener el locator original");
         } else {
-            reporter.reportHealeniumUpdate(originalLocator, null);
+            reporter.reportHealeniumUpdate(
+                    originalLocator,
+                    null,
+                    SmartFinderReporter.HealingOutcome.NOT_TRIGGERED,
+                    score,
+                    "El locator funcionó sin necesitar autocuración");
         }
     }
 
