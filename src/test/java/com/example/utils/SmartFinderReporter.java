@@ -19,6 +19,13 @@ public class SmartFinderReporter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SmartFinderReporter.class);
 
+    public enum HealingOutcome {
+        HEALED,
+        ORIGINAL_REUSED,
+        NOT_TRIGGERED,
+        UNKNOWN
+    }
+
     public void reportSuccess(String strategyLabel, By locator, WebElement element) {
         LOGGER.info("SmartFinder encontró el elemento usando {}: {}", strategyLabel, locator);
         Serenity.recordReportData()
@@ -34,27 +41,58 @@ public class SmartFinderReporter {
                 .andContents("No se encontró el elemento con el locator: " + locator);
     }
 
-    public void reportHealeniumUpdate(By originalLocator, String healedLocator) {
+    public void reportHealeniumUpdate(By originalLocator,
+                                      String healedLocator,
+                                      HealingOutcome outcome,
+                                      Double score,
+                                      String details) {
 
-        boolean healed = healedLocator != null
-                && !healedLocator.contains(originalLocator.toString())
-                && (healedLocator.contains("By.") || healedLocator.contains("cssSelector"));
+        String scoreLine = score != null ? "\nScore: " + score : "";
+        String detailLine = details != null && !details.isBlank() ? "\nDetalle: " + details : "";
 
-        if (healed) {
-            LOGGER.info("Healenium CURÓ el locator de {} a {}", originalLocator, healedLocator);
-            Serenity.recordReportData()
-                    .withTitle("Healenium - locator curado 🟢")
-                    .andContents(
-                            "Locator original: " + originalLocator +
-                                    "\nLocator curado: " + healedLocator
-                    );
-        } else {
-            LOGGER.info("Healenium NO curó el locator {}", originalLocator);
-            Serenity.recordReportData()
-                    .withTitle("Healenium - sin curación ⚪")
-                    .andContents(
-                            "El locator original funcionó o no hubo cambio: " + originalLocator
-                    );
+        switch (outcome) {
+            case HEALED:
+                LOGGER.info("Healenium CURÓ el locator de {} a {}", originalLocator, healedLocator);
+                Serenity.recordReportData()
+                        .withTitle("Healenium - locator curado 🟢")
+                        .andContents(
+                                "Locator original: " + originalLocator +
+                                        "\nLocator curado: " + healedLocator +
+                                        scoreLine +
+                                        detailLine
+                        );
+                break;
+            case ORIGINAL_REUSED:
+                LOGGER.info("Healenium intentó curar pero reutilizó el locator original {}", originalLocator);
+                Serenity.recordReportData()
+                        .withTitle("Healenium - sin cambio pero intentó 🟡")
+                        .andContents(
+                                "Healenium buscó alternativas pero mantuvo el locator original: " + originalLocator +
+                                        (healedLocator != null ? "\nLocator evaluado: " + healedLocator : "") +
+                                        scoreLine +
+                                        detailLine
+                        );
+                break;
+            case NOT_TRIGGERED:
+                LOGGER.info("Healenium no necesitó curar el locator {}", originalLocator);
+                Serenity.recordReportData()
+                        .withTitle("Healenium - sin curación ⚪")
+                        .andContents(
+                                "El locator original funcionó, Healenium no intervino: " + originalLocator +
+                                        detailLine
+                        );
+                break;
+            default:
+                LOGGER.info("Healenium no pudo determinar el resultado de curación para {}", originalLocator);
+                Serenity.recordReportData()
+                        .withTitle("Healenium - resultado desconocido 🔘")
+                        .andContents(
+                                "No se pudo determinar el resultado de Healenium para: " + originalLocator +
+                                        (healedLocator != null ? "\nLocator reportado: " + healedLocator : "") +
+                                        scoreLine +
+                                        detailLine
+                        );
+                break;
         }
 
         attachScreenshot("Healenium - evidencia");
