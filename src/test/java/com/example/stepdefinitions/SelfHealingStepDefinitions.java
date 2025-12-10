@@ -153,10 +153,9 @@ public class SelfHealingStepDefinitions {
         boolean isHealed = false;
 
         try {
-            Object healingResult = invokeAccessible(healeniumDriver, "getLastHealingResult");
-            if (healingResult == null) {
-                return new HealingExtraction(false, null, null, false);
-            }
+            Object healingResult = healeniumDriver.getClass().getMethod("getLastHealingResult").invoke(healeniumDriver);
+            if (healingResult != null) {
+                healingTriggered = true;
 
             healingTriggered = true;
 
@@ -173,42 +172,34 @@ public class SelfHealingStepDefinitions {
                     isHealed = !healedLocator.equals(originalLocator.toString());
                 }
             }
-
-            return new HealingExtraction(healingTriggered, healedLocator, score, isHealed);
         } catch (Exception ex) {
+            reporter.reportHealeniumUpdate(originalLocator, null,
+                    SmartFinderReporter.HealingOutcome.UNKNOWN, score,
+                    "No se pudo obtener el resultado de Healenium: " + ex.getMessage());
+            return;
+        }
+
+        if (healingTriggered && isHealed) {
             reporter.reportHealeniumUpdate(
                     originalLocator,
-                    healedLocator,
-                    SmartFinderReporter.HealingOutcome.UNKNOWN,
+                    healedLocator + (score != null ? " | Score: " + score : ""),
+                    SmartFinderReporter.HealingOutcome.HEALED,
                     score,
-                    "No se pudo obtener el resultado de Healenium: " + ex.getMessage());
-            return null;
-        }
-    }
-
-    private Object invokeAccessible(Object target, String methodName) throws Exception {
-        try {
-            var method = target.getClass().getDeclaredMethod(methodName);
-            method.setAccessible(true);
-            return method.invoke(target);
-        } catch (NoSuchMethodException e) {
-            var method = target.getClass().getMethod(methodName);
-            method.setAccessible(true);
-            return method.invoke(target);
-        }
-    }
-
-    private static class HealingExtraction {
-        final boolean healingTriggered;
-        final String healedLocator;
-        final Double score;
-        final boolean isHealed;
-
-        HealingExtraction(boolean healingTriggered, String healedLocator, Double score, boolean isHealed) {
-            this.healingTriggered = healingTriggered;
-            this.healedLocator = healedLocator;
-            this.score = score;
-            this.isHealed = isHealed;
+                    "Healenium reemplazó el locator original");
+        } else if (healingTriggered) {
+            reporter.reportHealeniumUpdate(
+                    originalLocator,
+                    healedLocator + (score != null ? " | Score: " + score : ""),
+                    SmartFinderReporter.HealingOutcome.ORIGINAL_REUSED,
+                    score,
+                    "Healenium buscó alternativas pero decidió mantener el locator original");
+        } else {
+            reporter.reportHealeniumUpdate(
+                    originalLocator,
+                    null,
+                    SmartFinderReporter.HealingOutcome.NOT_TRIGGERED,
+                    score,
+                    "El locator funcionó sin necesitar autocuración");
         }
     }
 
