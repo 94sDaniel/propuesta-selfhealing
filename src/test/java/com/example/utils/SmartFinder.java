@@ -8,46 +8,44 @@ import org.openqa.selenium.WebElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Localizador autocurativo muy sencillo: intenta el locator principal y,
- * si falla, recurre al locator de respaldo. Serenidad registra los pasos
- * para que quede evidencia del "Plan B".
- */
 public class SmartFinder {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SmartFinder.class);
 
     private final WebDriver driver;
-    private final SmartFinderReporter reporter;
 
     public SmartFinder(WebDriver driver) {
         this.driver = driver;
-        this.reporter = new SmartFinderReporter();
     }
 
+    /**
+     * SmartFinder intenta primero el locator principal.
+     * Si falla, usa un fallback y reporta en Serenity.
+     */
     public WebElement find(By primaryLocator, By fallbackLocator) {
+        LOGGER.info("🔍 SmartFinder intentando encontrar: {}", primaryLocator);
+
         try {
             WebElement element = driver.findElement(primaryLocator);
-            Serenity.recordReportData().withTitle("SmartFinder").andContents("Encontré el elemento con el locator principal: " + primaryLocator);
-            reporter.reportSuccess("locator principal", primaryLocator, element);
+            LOGGER.info("✔ Locator primario funcionó: {}", primaryLocator);
+
+            Serenity.recordReportData()
+                    .withTitle("SmartFinder - locator primario OK")
+                    .andContents("Elemento encontrado con: " + primaryLocator);
+
             return element;
-        } catch (NoSuchElementException primaryFailure) {
-            reporter.reportFailure("locator principal", primaryLocator, primaryFailure);
-            LOGGER.warn("Locator principal no funcionó ({}). Activando Plan B...", primaryLocator, primaryFailure);
-            try {
-                WebElement element = driver.findElement(fallbackLocator);
-                reporter.reportSuccess("Plan B", fallbackLocator, element);
-                Serenity.recordReportData()
-                        .withTitle("SmartFinder - Plan B")
-                        .andContents("Se usó el locator de respaldo: " + fallbackLocator);
-                return element;
-            } catch (NoSuchElementException fallbackFailure) {
-                reporter.reportFailure("Plan B", fallbackLocator, fallbackFailure);
-                throw new NoSuchElementException(
-                        "No se encontró el elemento con ninguno de los locators. Plan B también falló.",
-                        fallbackFailure
-                );
-            }
+
+        } catch (NoSuchElementException e) {
+            LOGGER.warn("❌ Locator primario falló: {}", primaryLocator);
+
+            Serenity.recordReportData()
+                    .withTitle("SmartFinder - fallback usado")
+                    .andContents("Locator roto: " + primaryLocator +
+                            "\nFallback elegido: " + fallbackLocator);
+
+            LOGGER.info("➡ Reintentando con fallback: {}", fallbackLocator);
+
+            return driver.findElement(fallbackLocator);
         }
     }
 }

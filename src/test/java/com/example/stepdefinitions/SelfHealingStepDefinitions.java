@@ -9,12 +9,8 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import net.serenitybdd.annotations.Managed;
-import net.serenitybdd.core.Serenity;
 import org.assertj.core.api.Assertions;
-import org.openqa.selenium.By;
-import org.openqa.selenium.JavascriptExecutor;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
+import org.openqa.selenium.*;
 import org.openqa.selenium.remote.RemoteWebDriver;
 import net.thucydides.core.webdriver.WebDriverFacade;
 
@@ -35,33 +31,14 @@ public class SelfHealingStepDefinitions {
     public void setUp() {
         WebDriverManager.chromedriver().setup();
         smartFinder = new SmartFinder(driver);
-        int maxAttempts = 5;  // Número máximo de intentos
-        long delayMs = 3000;  // Espera de 3 segundos entre intentos
 
-        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
-            try {
-                // Intento de crear el Healenium Driver
-                System.out.println(String.format("Intentando conectar con Healenium (Intento %d/%d)...", attempt, maxAttempts));
-                healeniumDriver = SelfHealingDriver.create(unwrapToRemote(driver));
-                healeniumOnline = true;
-                // Si tiene éxito, salimos del bucle
-                System.out.println("¡Conexión exitosa con Healenium!");
-                return;
-            } catch (Exception ex) {
-                if (attempt < maxAttempts) {
-                    // Si falla y aún quedan intentos, esperamos y reintentamos
-                    System.out.println(String.format("Fallo al conectar. Esperando %dms para reintentar...", delayMs));
-                    try {
-                        Thread.sleep(delayMs);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
-                } else {
-                    // Si es el último intento y falla, se reporta el error final.
-                    reporter.reportHealeniumUnavailable(ex);
-                    healeniumOnline = false;
-                }
-            }
+        try {
+            healeniumDriver = SelfHealingDriver.create(unwrapToRemote(driver));
+            healeniumOnline = true;
+            System.out.println("Healenium conectado correctamente! 🩹");
+        } catch (Exception ex) {
+            System.err.println("Healenium no disponible: " + ex.getMessage());
+            healeniumOnline = false;
         }
     }
 
@@ -83,142 +60,49 @@ public class SelfHealingStepDefinitions {
     @When("^el usuario busca el boton con Healenium$")
     public void userFindsButtonWithHealenium() {
         By originalLocator = By.id("boton-principal");
+
         try {
             WebElement button = healeniumDriver.findElement(originalLocator);
+            String foundId = button.getAttribute("id");
+
             button.click();
-            reportHealingResult(originalLocator);
+
+            if (!foundId.equals("boton-principal")) {
+                String msg = "Healenium curó el elemento. ORIGINAL: boton-principal -> NUEVO: " + foundId;
+                reporter.reportHealeniumUpdate(originalLocator, msg);
+            }
+
             ((JavascriptExecutor) driver).executeScript("mostrarMensajeHealenium()");
+
         } catch (Exception ex) {
             reporter.reportHealeniumFallback(originalLocator, ex);
-            Assertions.fail("Healenium no logró curar el locator roto");
+            Assertions.fail("Healenium falló en la curación del locator roto");
         }
     }
 
     @Then("^la accion continua sin fallar gracias al Plan B$")
     public void actionContinuesWithFallback() {
-        WebElement message = driver.findElement(By.id("resultado"));
-        Assertions.assertThat(message.getText())
-                .as("El mensaje de resultado deberia reflejar el clic")
+        Assertions.assertThat(driver.findElement(By.id("resultado")).getText())
                 .contains("Plan B funciono");
     }
 
     @Then("^la accion continua gracias a Healenium sin configurar un Plan B$")
     public void actionContinuesWithHealenium() {
-        WebElement message = driver.findElement(By.id("resultado"));
-        Assertions.assertThat(message.getText())
-                .as("El mensaje de resultado deberia reflejar el clic curado")
+        Assertions.assertThat(driver.findElement(By.id("resultado")).getText())
                 .contains("Healenium curó el locator exitosamente");
-    }
-    private void reportHealingResult(By originalLocator) {
-        HealingExtraction extraction = extractHealingData(originalLocator);
-
-        if (extraction == null) {
-            reporter.reportHealeniumUpdate(
-                    originalLocator,
-                    null,
-                    SmartFinderReporter.HealingOutcome.UNKNOWN,
-                    null,
-                    "No se pudo obtener el resultado de Healenium");
-            return;
-        }
-
-        if (extraction.healingTriggered && extraction.isHealed) {
-            reporter.reportHealeniumUpdate(
-                    originalLocator,
-                    extraction.healedLocator,
-                    SmartFinderReporter.HealingOutcome.HEALED,
-                    extraction.score,
-                    "Healenium reemplazó el locator original");
-        } else if (extraction.healingTriggered) {
-            reporter.reportHealeniumUpdate(
-                    originalLocator,
-                    extraction.healedLocator,
-                    SmartFinderReporter.HealingOutcome.ORIGINAL_REUSED,
-                    extraction.score,
-                    "Healenium buscó alternativas pero decidió mantener el locator original");
-        } else {
-            reporter.reportHealeniumUpdate(
-                    originalLocator,
-                    null,
-                    SmartFinderReporter.HealingOutcome.NOT_TRIGGERED,
-                    extraction.score,
-                    "El locator funcionó sin necesitar autocuración");
-        }
-    }
-
-    private HealingExtraction extractHealingData(By originalLocator) {
-        Double score = null;
-        String healedLocator = null;
-        boolean healingTriggered = false;
-        boolean isHealed = false;
-
-        try {
-            Object healingResult = healeniumDriver.getClass().getMethod("getLastHealingResult").invoke(healeniumDriver);
-            if (healingResult != null) {
-                healingTriggered = true;
-
-            healingTriggered = true;
-
-            Object scoreObj = invokeAccessible(healingResult, "getScore");
-            if (scoreObj instanceof Number) {
-                score = ((Number) scoreObj).doubleValue();
-            }
-
-            Object target = invokeAccessible(healingResult, "getTarget");
-            if (target != null) {
-                Object locatorObj = invokeAccessible(target, "getLocator");
-                if (locatorObj != null) {
-                    healedLocator = locatorObj.toString();
-                    isHealed = !healedLocator.equals(originalLocator.toString());
-                }
-            }
-        } catch (Exception ex) {
-            reporter.reportHealeniumUpdate(originalLocator, null,
-                    SmartFinderReporter.HealingOutcome.UNKNOWN, score,
-                    "No se pudo obtener el resultado de Healenium: " + ex.getMessage());
-            return;
-        }
-
-        if (healingTriggered && isHealed) {
-            reporter.reportHealeniumUpdate(
-                    originalLocator,
-                    healedLocator + (score != null ? " | Score: " + score : ""),
-                    SmartFinderReporter.HealingOutcome.HEALED,
-                    score,
-                    "Healenium reemplazó el locator original");
-        } else if (healingTriggered) {
-            reporter.reportHealeniumUpdate(
-                    originalLocator,
-                    healedLocator + (score != null ? " | Score: " + score : ""),
-                    SmartFinderReporter.HealingOutcome.ORIGINAL_REUSED,
-                    score,
-                    "Healenium buscó alternativas pero decidió mantener el locator original");
-        } else {
-            reporter.reportHealeniumUpdate(
-                    originalLocator,
-                    null,
-                    SmartFinderReporter.HealingOutcome.NOT_TRIGGERED,
-                    score,
-                    "El locator funcionó sin necesitar autocuración");
-        }
     }
 
     private RemoteWebDriver unwrapToRemote(WebDriver webdriver) {
         WebDriver current = webdriver;
 
         while (current instanceof WebDriverFacade) {
-            WebDriver proxied = ((WebDriverFacade) current).getProxiedDriver();
-            // DevToolsWebDriverFacade también es un WebDriverFacade, así que seguimos desenrollando
-            if (proxied == current) {
-                break;
-            }
-            current = proxied;
+            current = ((WebDriverFacade) current).getProxiedDriver();
         }
 
         if (current instanceof RemoteWebDriver) {
             return (RemoteWebDriver) current;
         }
 
-        throw new IllegalStateException("El WebDriver administrado no es compatible con RemoteWebDriver necesario para Healenium");
+        throw new IllegalStateException("El driver no es compatible con Healenium");
     }
 }
