@@ -110,28 +110,66 @@ public class SelfHealingStepDefinitions {
                 .contains("Healenium curó el locator exitosamente");
     }
     private void reportHealingResult(By originalLocator) {
+        HealingExtraction extraction = extractHealingData(originalLocator);
+
+        if (extraction == null) {
+            reporter.reportHealeniumUpdate(
+                    originalLocator,
+                    null,
+                    SmartFinderReporter.HealingOutcome.UNKNOWN,
+                    null,
+                    "No se pudo obtener el resultado de Healenium");
+            return;
+        }
+
+        if (extraction.healingTriggered && extraction.isHealed) {
+            reporter.reportHealeniumUpdate(
+                    originalLocator,
+                    extraction.healedLocator,
+                    SmartFinderReporter.HealingOutcome.HEALED,
+                    extraction.score,
+                    "Healenium reemplazó el locator original");
+        } else if (extraction.healingTriggered) {
+            reporter.reportHealeniumUpdate(
+                    originalLocator,
+                    extraction.healedLocator,
+                    SmartFinderReporter.HealingOutcome.ORIGINAL_REUSED,
+                    extraction.score,
+                    "Healenium buscó alternativas pero decidió mantener el locator original");
+        } else {
+            reporter.reportHealeniumUpdate(
+                    originalLocator,
+                    null,
+                    SmartFinderReporter.HealingOutcome.NOT_TRIGGERED,
+                    extraction.score,
+                    "El locator funcionó sin necesitar autocuración");
+        }
+    }
+
+    private HealingExtraction extractHealingData(By originalLocator) {
+        Double score = null;
         String healedLocator = null;
         boolean healingTriggered = false;
         boolean isHealed = false;
-        Double score = null;
 
         try {
             Object healingResult = healeniumDriver.getClass().getMethod("getLastHealingResult").invoke(healeniumDriver);
             if (healingResult != null) {
                 healingTriggered = true;
 
-                Object scoreObj = healingResult.getClass().getMethod("getScore").invoke(healingResult);
-                if (scoreObj instanceof Number) {
-                    score = ((Number) scoreObj).doubleValue();
-                }
+            healingTriggered = true;
 
-                Object target = healingResult.getClass().getMethod("getTarget").invoke(healingResult);
-                if (target != null) {
-                    Object locatorObj = target.getClass().getMethod("getLocator").invoke(target);
-                    if (locatorObj != null) {
-                        healedLocator = locatorObj.toString();
-                        isHealed = !healedLocator.equals(originalLocator.toString());
-                    }
+            Object scoreObj = invokeAccessible(healingResult, "getScore");
+            if (scoreObj instanceof Number) {
+                score = ((Number) scoreObj).doubleValue();
+            }
+
+            Object target = invokeAccessible(healingResult, "getTarget");
+            if (target != null) {
+                Object locatorObj = invokeAccessible(target, "getLocator");
+                if (locatorObj != null) {
+                    healedLocator = locatorObj.toString();
+                    isHealed = !healedLocator.equals(originalLocator.toString());
                 }
             }
         } catch (Exception ex) {
